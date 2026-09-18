@@ -1,0 +1,1051 @@
+/* ==========================================================================
+   Grocery Planner — design system
+   --------------------------------------------------------------------------
+   1.  Tokens
+   2.  Base / reset / typography
+   3.  App header + tabs
+   4.  Layout shell
+   5.  Buttons
+   6.  Form controls (inputs, selects, checkboxes)
+   7.  Weekly menu grid
+   8.  Meal bank
+   9.  Grocery list
+   10. History
+   11. Empty states + notes
+   12. Modal
+   13. Motion
+   14. Responsive
+   ========================================================================== */
+
+/* ==========================================================================
+   1. TOKENS
+   ========================================================================== */
+:root {
+  /* --- Core identity (unchanged): warm cream ground, kitchen-garden green --- */
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --border: #e4ded4;
+  --text: #2b2620;
+  --text-muted: #7a7266;
+  --accent: #4a7c59;
+  --accent-dark: #365d41;
+  --accent-light: #e7f0e9;
+  --danger: #b3492f;
+
+  /* --- Extended warm neutral ramp (derived from the cream/border pair) --- */
+  --sand-50: #fdfcfa;
+  --sand-100: #f7f4ee;
+  --sand-200: #f1ece3;
+  --sand-300: #e9e2d6;
+  --text-soft: #5b5348;
+
+  /* --- Extended green ramp --- */
+  --accent-tint: #f2f7f3; /* barely-there wash for banding / hovers */
+  --accent-deep: #2a4a33; /* headings, high-contrast text on cream */
+  --accent-ring: rgba(74, 124, 89, 0.32); /* focus ring */
+
+  --danger-tint: #fbf1ee;
+
+  /* --- Radii: tightened to a crisper, ledger-like edge (Option A) --- */
+  --radius: 6px;
+  --radius-sm: 3px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+
+  /* --- Spacing scale (4px base) --- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+
+  /* --- Elevation: soft, warm-tinted, never harsh black --- */
+  --shadow-xs: 0 1px 2px rgba(60, 48, 32, 0.05);
+  --shadow-sm: 0 1px 2px rgba(60, 48, 32, 0.05), 0 2px 6px rgba(60, 48, 32, 0.045);
+  --shadow-md: 0 2px 4px rgba(60, 48, 32, 0.06), 0 8px 20px rgba(60, 48, 32, 0.08);
+  --shadow-lg: 0 4px 10px rgba(60, 48, 32, 0.09), 0 24px 48px rgba(60, 48, 32, 0.16);
+
+  /* --- Type: Source Serif 4 (headings, day labels) + Public Sans (UI) --- */
+  --font-sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "Source Serif 4", ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+  /* --- Motion --- */
+  --ease: cubic-bezier(0.25, 0.6, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur: 170ms;
+
+  font-family: var(--font-sans);
+}
+
+/* ==========================================================================
+   2. BASE / RESET / TYPOGRAPHY
+   ========================================================================== */
+* { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: 0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  padding-bottom: calc(var(--sp-7) + env(safe-area-inset-bottom));
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.2;
+  color: var(--accent-deep);
+}
+
+h2 {
+  font-size: 1.2rem;
+  margin: var(--sp-5) 0 var(--sp-2);
+}
+
+h3 {
+  font-size: 1.02rem;
+  margin: 0 0 var(--sp-2);
+  color: var(--accent-dark);
+}
+
+strong { font-weight: 650; }
+
+::selection {
+  background: var(--accent-light);
+  color: var(--accent-deep);
+}
+
+/* A single, consistent keyboard focus treatment for every interactive thing. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ==========================================================================
+   3. APP HEADER + TABS
+   ========================================================================== */
+.app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding:
+    calc(env(safe-area-inset-top) + var(--sp-3))
+    calc(env(safe-area-inset-right) + var(--sp-4))
+    0
+    calc(env(safe-area-inset-left) + var(--sp-4));
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: var(--shadow-xs);
+}
+
+.app-header h1 {
+  margin: 0 0 var(--sp-3);
+  font-size: 1.32rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brand-mark {
+  color: var(--accent-dark);
+  flex: none;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--sp-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0.6rem 0.85rem 0.62rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  cursor: pointer;
+  color: var(--text-muted);
+  white-space: nowrap;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+/* The active underline is a pseudo-element so it can animate independently
+   of the button box and never shifts the text baseline. */
+.tab-btn::after {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--dur) var(--ease);
+}
+
+.tab-btn:hover {
+  color: var(--accent-dark);
+  background: var(--accent-tint);
+}
+.tab-btn:active { color: var(--accent-deep); }
+
+.tab-btn.active {
+  color: var(--accent-deep);
+  font-weight: 650;
+}
+.tab-btn.active::after { transform: scaleX(1); }
+
+.tab-btn:focus-visible {
+  outline-offset: -2px;
+}
+
+/* ==========================================================================
+   4. LAYOUT SHELL
+   ========================================================================== */
+main#app {
+  max-width: 980px;
+  margin: 0 auto;
+  padding:
+    var(--sp-5)
+    calc(env(safe-area-inset-right) + var(--sp-4))
+    var(--sp-4)
+    calc(env(safe-area-inset-left) + var(--sp-4));
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+/* ==========================================================================
+   5. BUTTONS
+   ========================================================================== */
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: inherit;
+  font-weight: 550;
+  letter-spacing: 0.004em;
+  line-height: 1.25;
+  border-radius: var(--radius-sm);
+  transition:
+    background-color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    transform var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid var(--accent);
+  padding: 0.58rem 1.05rem;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-xs);
+}
+.btn-primary:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:active {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text-soft);
+  border: 1px solid var(--border);
+  padding: 0.58rem 1.05rem;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-xs);
+}
+.btn-secondary:hover {
+  background: var(--sand-100);
+  border-color: var(--sand-300);
+  color: var(--text);
+}
+.btn-secondary:active {
+  background: var(--sand-200);
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid rgba(179, 73, 47, 0.4);
+  color: var(--danger);
+  padding: 0.36rem 0.7rem;
+  font-size: 0.8rem;
+}
+.btn-danger:hover {
+  background: var(--danger-tint);
+  border-color: var(--danger);
+}
+.btn-danger:active {
+  background: #f6e5e0;
+  transform: translateY(1px);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Small round "✕" control used in snack tags and ingredient rows. */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.65rem;
+  height: 1.65rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  line-height: 1;
+  color: var(--text-muted);
+  padding: 0;
+  transition:
+    background-color var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    transform var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-icon:hover {
+  color: var(--danger);
+  background: var(--danger-tint);
+}
+.btn-icon:active { transform: scale(0.9); }
+
+/* ==========================================================================
+   6. FORM CONTROLS
+   ========================================================================== */
+/* Native selects are replaced with a flat field + a CSS chevron drawn from an
+   inline data-URI SVG (no extra files, nothing to cache). */
+.cell-select,
+#meal-form select,
+.ingredient-row select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.2 1.6 6 6.2l4.8-4.6' fill='none' stroke='%237a7266' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 11px 7px;
+  padding-right: 1.75rem !important;
+}
+
+input[type="text"],
+select {
+  font-family: inherit;
+  color: var(--text);
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    background-color var(--dur) var(--ease);
+}
+
+input[type="text"]::placeholder {
+  color: #a79d90;
+}
+
+input[type="text"]:hover,
+select:hover {
+  border-color: var(--sand-300);
+}
+
+input[type="text"]:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+input[type="text"]:focus-visible,
+select:focus-visible {
+  outline: none;
+}
+
+/* ==========================================================================
+   7. WEEKLY MENU GRID
+   ========================================================================== */
+.grid-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  /* Pure-CSS scroll affordance: the soft edge fades appear only while there is
+     more table to the left/right, so sideways scrolling reads as deliberate. */
+  background-image:
+    linear-gradient(to right, var(--surface) 30%, rgba(255, 255, 255, 0)),
+    linear-gradient(to left, var(--surface) 30%, rgba(255, 255, 255, 0)),
+    linear-gradient(to right, rgba(60, 48, 32, 0.13), rgba(60, 48, 32, 0)),
+    linear-gradient(to left, rgba(60, 48, 32, 0.13), rgba(60, 48, 32, 0));
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-size: 44px 100%, 44px 100%, 16px 100%, 16px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* Thin, warm scrollbar on desktop so the scroll region is visible but quiet. */
+.grid-wrap::-webkit-scrollbar { height: 9px; }
+.grid-wrap::-webkit-scrollbar-track { background: transparent; }
+.grid-wrap::-webkit-scrollbar-thumb {
+  background: var(--sand-300);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--surface);
+}
+.grid-wrap::-webkit-scrollbar-thumb:hover { background: #d8cfbf; }
+
+table.week-grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  min-width: 720px;
+  background: transparent;
+}
+
+table.week-grid th,
+table.week-grid td {
+  padding: 0.6rem 0.65rem;
+  /* Middle alignment keeps the single-meal selects optically centred against
+     the taller snack column instead of stranding them at the top of the row. */
+  vertical-align: middle;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+table.week-grid th:last-child,
+table.week-grid td:last-child { border-right: none; }
+table.week-grid tbody tr:last-child td { border-bottom: none; }
+
+table.week-grid th {
+  background: var(--accent-light);
+  color: var(--accent-deep);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+  vertical-align: middle;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  /* border-collapse:separate drops borders on sticky cells — paint them. */
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+/* Row banding + hover make 28 cells scannable instead of flat. */
+table.week-grid tbody tr:nth-child(even) td { background: var(--sand-50); }
+table.week-grid tbody tr:nth-child(odd) td { background: var(--surface); }
+table.week-grid tbody tr:hover td { background: var(--accent-tint); }
+
+/* Day column pinned while the grid scrolls sideways. */
+.day-label {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent-deep);
+  white-space: nowrap;
+  min-width: 104px;
+  background: var(--sand-100) !important;
+  box-shadow: inset -1px 0 0 var(--border), 6px 0 12px -10px rgba(60, 48, 32, 0.4);
+}
+table.week-grid tbody tr:hover .day-label { background: var(--accent-light) !important; }
+
+table.week-grid th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  min-width: 104px;
+  box-shadow: inset 0 -1px 0 var(--border), inset -1px 0 0 var(--border);
+}
+
+.cell-select {
+  width: 100%;
+  padding: 0.42rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 0.83rem;
+  line-height: 1.35;
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: var(--shadow-xs);
+}
+
+/* An unfilled cell is visibly a blank waiting to be filled: dashed, tinted,
+   muted italic. A filled cell is a solid white card with real weight.
+   `:has()` reads the currently-selected option, so no JS is involved. */
+td > .cell-select:has(option[value=""]:checked) {
+  color: var(--text-muted);
+  font-style: italic;
+  background-color: transparent;
+  border-style: dashed;
+  border-color: var(--sand-300);
+  box-shadow: none;
+}
+td > .cell-select:not(:has(option[value=""]:checked)) {
+  font-weight: 550;
+  border-color: var(--sand-300);
+}
+
+/* Snacks column: stacked chips + an "add" control. */
+.snack-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 168px;
+}
+
+.snack-tag {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-1);
+  background: var(--accent-light);
+  color: var(--accent-deep);
+  border: 1px solid rgba(74, 124, 89, 0.16);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.25rem 0.2rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 550;
+  line-height: 1.3;
+}
+.snack-tag span { min-width: 0; }
+
+/* The snack "+ add snack..." select is a quiet affordance, not a filled field. */
+.snack-cell .cell-select {
+  font-size: 0.78rem;
+  color: var(--accent-dark);
+  background-color: transparent;
+  border-style: dashed;
+  border-color: var(--sand-300);
+  box-shadow: none;
+}
+.snack-cell .cell-select:hover {
+  background-color: var(--accent-tint);
+  border-color: var(--accent);
+}
+
+/* ==========================================================================
+   8. MEAL BANK
+   ========================================================================== */
+.bank-category-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4) var(--sp-2);
+  box-shadow: var(--shadow-sm);
+}
+
+.bank-category-group h3 {
+  font-size: 0.72rem;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--sand-200);
+  margin-bottom: var(--sp-1);
+}
+
+.meal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.4rem;
+  margin: 0 -0.4rem;
+  border-radius: var(--radius-sm);
+  border-bottom: 1px solid var(--sand-200);
+  gap: var(--sp-2);
+  transition: background-color var(--dur) var(--ease);
+}
+.meal-row:last-child { border-bottom: none; }
+.meal-row:hover { background: var(--sand-50); }
+
+.meal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.meal-name {
+  font-weight: 550;
+  font-size: 0.94rem;
+  line-height: 1.35;
+}
+.meal-meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+.meal-actions {
+  display: flex;
+  gap: var(--sp-1);
+  flex-shrink: 0;
+}
+.meal-actions .btn-secondary {
+  padding: 0.36rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+/* ==========================================================================
+   9. GROCERY LIST
+   ========================================================================== */
+.grocery-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.grocery-section h3 {
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--sand-200);
+  margin-bottom: var(--sp-1);
+}
+
+.grocery-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  /* Generous vertical padding = a comfortable thumb target in a grocery aisle. */
+  padding: 0.5rem 0.45rem;
+  margin: 0 -0.45rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.93rem;
+  line-height: 1.35;
+  transition: background-color var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+.grocery-item + .grocery-item {
+  box-shadow: inset 0 1px 0 var(--sand-200);
+}
+.grocery-item:hover { background: var(--sand-50); }
+
+/* Custom checkbox — the real <input type="checkbox"> stays in the DOM and
+   stays the clickable, focusable, change-firing control. Only its paint
+   is replaced (tick drawn with an inline data-URI SVG). */
+.grocery-item input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 21px;
+  height: 21px;
+  margin: 0;
+  border: 1.5px solid var(--sand-300);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  position: relative;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.grocery-item input[type="checkbox"]:hover { border-color: var(--accent); }
+.grocery-item input[type="checkbox"]:active { transform: scale(0.88); }
+.grocery-item input[type="checkbox"]:checked {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='11' viewBox='0 0 14 11'%3E%3Cpath d='M1.4 5.6 5 9.2 12.6 1.6' fill='none' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px 9px;
+}
+.grocery-item input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.item-label {
+  font-weight: 500;
+  transition: color var(--dur) var(--ease), opacity var(--dur) var(--ease);
+  /* Animate the strikethrough sweeping across rather than snapping on. */
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 58%;
+  background-size: 0 1.5px;
+  transition: background-size var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.grocery-item.checked { opacity: 0.62; }
+.grocery-item.checked .item-label {
+  color: var(--text-muted);
+  background-size: 100% 1.5px;
+  /* Kept for non-supporting engines / print. */
+  text-decoration: line-through;
+  text-decoration-color: transparent;
+}
+.grocery-item.checked .item-qty,
+.grocery-item.checked .item-sources { color: #a79d90; }
+
+.item-qty {
+  color: var(--text-muted);
+  font-size: 0.81rem;
+  font-variant-numeric: tabular-nums;
+}
+.item-sources {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.015em;
+  margin-left: auto;
+  padding-left: var(--sp-2);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   10. HISTORY
+   ========================================================================== */
+.history-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.history-item:hover {
+  border-color: var(--sand-300);
+  box-shadow: var(--shadow-md);
+}
+.history-item strong {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--accent-deep);
+}
+/* Second child is the (unclassed) actions container emitted by app.js. */
+.history-item > div:last-child {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   11. EMPTY STATES + NOTES
+   ========================================================================== */
+.empty-state {
+  color: var(--text-muted);
+  padding: var(--sp-7) var(--sp-5);
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  max-width: 34rem;
+  margin: var(--sp-4) auto;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      var(--sand-50) 0 10px,
+      var(--surface) 10px 20px
+    );
+  border: 1.5px dashed var(--sand-300);
+  border-radius: var(--radius-lg);
+}
+.empty-state strong { color: var(--accent-dark); }
+
+.small-note {
+  font-size: 0.79rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  margin: 0 0 var(--sp-3);
+}
+.bank-category-group .small-note { margin: var(--sp-2) 0; font-style: italic; }
+
+/* ==========================================================================
+   12. MODAL
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 38, 32, 0.42);
+  -webkit-backdrop-filter: blur(4px) saturate(115%);
+  backdrop-filter: blur(4px) saturate(115%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding:
+    calc(env(safe-area-inset-top) + var(--sp-5))
+    calc(env(safe-area-inset-right) + var(--sp-4))
+    calc(env(safe-area-inset-bottom) + var(--sp-5))
+    calc(env(safe-area-inset-left) + var(--sp-4));
+  overflow-y: auto;
+  z-index: 100;
+  animation: backdrop-in var(--dur) var(--ease) both;
+}
+/* app.js toggles this class, which sets display:none — so only the *opening*
+   transition is animatable. That is intentional; no close animation is faked. */
+.modal-backdrop.hidden { display: none; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  max-width: 540px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+  animation: modal-in 200ms var(--ease) both;
+}
+
+.modal h2 {
+  margin: 0 0 var(--sp-4);
+  font-size: 1.3rem;
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--sand-200);
+}
+
+#meal-form label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--sp-3);
+}
+
+#meal-form input[type="text"],
+#meal-form select {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 0.92rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  margin-top: 0.35rem;
+  color: var(--text);
+  background-color: var(--sand-50);
+}
+#meal-form input[type="text"]:focus,
+#meal-form select:focus { background-color: var(--surface); }
+
+.ingredients-editor {
+  margin-top: var(--sp-4);
+  background: var(--sand-50);
+  border: 1px solid var(--sand-200);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+}
+
+.ingredients-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--sp-2);
+}
+
+.ingredients-header button {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--accent-dark);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  border-radius: var(--radius-pill);
+  padding: 0.25rem 0.6rem;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.ingredients-header button:hover {
+  background: var(--accent-light);
+  border-color: rgba(74, 124, 89, 0.25);
+}
+.ingredients-header button:active { background: #d9e7dc; }
+
+.ingredient-row {
+  display: grid;
+  grid-template-columns: 1.9fr 1.5fr 1fr auto;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-1);
+}
+.ingredient-row input,
+.ingredient-row select {
+  min-width: 0;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--sand-200);
+}
+
+/* ==========================================================================
+   13. MOTION
+   ========================================================================== */
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes tab-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* render() replaces #app's contents with exactly one wrapper <div> per tab,
+   so this gives every tab switch a short, consistent settle-in. */
+main#app > div {
+  animation: tab-in 180ms var(--ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .btn-primary:active,
+  .btn-secondary:active,
+  .btn-danger:active,
+  .btn-icon:active,
+  .grocery-item input[type="checkbox"]:active { transform: none; }
+}
+
+/* ==========================================================================
+   14. RESPONSIVE
+   ========================================================================== */
+@media (max-width: 760px) {
+  main#app {
+    padding-top: var(--sp-4);
+  }
+  .app-header h1 { font-size: 1.18rem; }
+  .toolbar { gap: var(--sp-1); }
+  .toolbar .btn-primary,
+  .toolbar .btn-secondary { flex: 1 1 auto; }
+  .bank-category-group,
+  .grocery-section { padding-left: var(--sp-3); padding-right: var(--sp-3); }
+  .history-item > div:last-child { width: 100%; }
+  .history-item > div:last-child .btn-secondary { flex: 1; }
+  .item-sources { display: none; }
+}
+
+@media (max-width: 600px) {
+  /* Preserved from the original stylesheet: ingredient rows reflow to two
+     columns so name/section sit on one line and qty/remove on the next. */
+  .ingredient-row {
+    grid-template-columns: 1fr 1fr;
+    padding-bottom: var(--sp-2);
+    margin-bottom: var(--sp-2);
+    border-bottom: 1px solid var(--sand-200);
+  }
+  .ingredient-row:last-child { border-bottom: none; }
+  .modal { padding: var(--sp-4); }
+  .modal h2 { font-size: 1.18rem; }
+}
+
+@media (max-width: 430px) {
+  /* Tighten the tab strip so all four tabs fit a 390px iPhone without the
+     strip needing to be scrolled. */
+  .tab-btn { padding-left: 0.55rem; padding-right: 0.55rem; font-size: 0.82rem; }
+  .tab-btn::after { left: 0.3rem; right: 0.3rem; }
+  .app-header { padding-left: calc(env(safe-area-inset-left) + var(--sp-3));
+                padding-right: calc(env(safe-area-inset-right) + var(--sp-3)); }
+  main#app { padding-left: calc(env(safe-area-inset-left) + var(--sp-3));
+             padding-right: calc(env(safe-area-inset-right) + var(--sp-3)); }
+  table.week-grid th,
+  table.week-grid td { padding: 0.5rem 0.5rem; }
+  .day-label { min-width: 88px; font-size: 0.88rem; }
+  table.week-grid th:first-child { min-width: 88px; }
+  .grocery-item { font-size: 0.9rem; }
+}
