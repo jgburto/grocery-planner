@@ -312,6 +312,20 @@ test("AC6: ingredientLineToItem — '1 bunch cilantro' -> produce", () => {
   assert.equal(result.name, "Cilantro");
 });
 
+test("AC6 addendum: ingredientLineToItem — '4 cloves garlic, minced' drops comma suffix", () => {
+  const result = ingredientLineToItem("4 cloves garlic, minced");
+  assert.equal(result.name, "Garlic");
+  assert.equal(result.quantity, "4 cloves");
+  assert.equal(result.section, "produce");
+});
+
+test("AC6 addendum: ingredientLineToItem — '1 cup rice.' strips trailing punctuation", () => {
+  const result = ingredientLineToItem("1 cup rice.");
+  assert.equal(result.name, "Rice");
+  assert.equal(result.quantity, "1 cup");
+  assert.equal(result.section, "pantry_grains");
+});
+
 // ---------------------------------------------------------------------------
 // guessSection
 // ---------------------------------------------------------------------------

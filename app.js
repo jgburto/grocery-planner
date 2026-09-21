@@ -45,6 +45,10 @@ let history = load(STORAGE_KEYS.history, []);
 
 let activeTab = "menu";
 
+// Holds sourceUrl/yield/importedAt for a recipe import in progress, until the
+// meal modal is saved (new meal) or closed/cancelled (cleared either way).
+let pendingImportMeta = null;
+
 function persistAll() {
   save(STORAGE_KEYS.bank, mealBank);
   save(STORAGE_KEYS.week, weekPlan);
@@ -482,8 +486,22 @@ function renderBankTab(app) {
   const wrap = document.createElement("div");
   const toolbar = document.createElement("div");
   toolbar.className = "toolbar";
-  toolbar.innerHTML = `<button class="btn-primary" id="add-meal-btn">+ Add meal</button>`;
+  toolbar.innerHTML = `
+    <button class="btn-primary" id="add-meal-btn">+ Add meal</button>
+    <button class="btn-secondary" id="import-recipe-btn">Import recipe (.html)</button>
+    <input type="file" id="import-file-input" accept=".html,.htm" class="visually-hidden" />
+  `;
   wrap.appendChild(toolbar);
+
+  const dropZone = document.createElement("div");
+  dropZone.id = "import-drop-zone";
+  dropZone.textContent = "or drop a saved .html recipe page here";
+  wrap.appendChild(dropZone);
+
+  const importStatus = document.createElement("p");
+  importStatus.id = "import-status";
+  importStatus.setAttribute("role", "status");
+  wrap.appendChild(importStatus);
 
   CATEGORIES.forEach((cat) => {
     const group = document.createElement("div");
@@ -514,6 +532,26 @@ function renderBankTab(app) {
       const cuisineTxt = meal.cuisine ? meal.cuisine + " · " : "";
       meta.textContent = cuisineTxt + meal.ingredients.length + " ingredient" + (meal.ingredients.length === 1 ? "" : "s");
       info.appendChild(meta);
+
+      if (meal.instructions && meal.instructions.length > 0) {
+        // Built with createElement/setAttribute (not innerHTML): sourceUrl comes
+        // from an untrusted file and must never be interpolated into markup.
+        let marker;
+        if (typeof meal.sourceUrl === "string" && /^https?:\/\//i.test(meal.sourceUrl)) {
+          marker = document.createElement("a");
+          marker.setAttribute("href", meal.sourceUrl);
+          marker.setAttribute("target", "_blank");
+          marker.setAttribute("rel", "noopener");
+          marker.title = "Has instructions — open source";
+        } else {
+          marker = document.createElement("span");
+          marker.title = "Has instructions";
+        }
+        marker.className = "meal-source";
+        marker.textContent = "📖";
+        info.appendChild(marker);
+      }
+
       row.appendChild(info);
 
       const actions = document.createElement("div");
@@ -544,6 +582,98 @@ function renderBankTab(app) {
 
   app.appendChild(wrap);
   document.getElementById("add-meal-btn").addEventListener("click", () => openMealModal(null));
+
+  const importBtn = document.getElementById("import-recipe-btn");
+  const importInput = document.getElementById("import-file-input");
+  const importDropZone = document.getElementById("import-drop-zone");
+
+  importBtn.addEventListener("click", () => importInput.click());
+  importInput.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    handleImportFile(file);
+    e.target.value = "";
+  });
+
+  importDropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    importDropZone.classList.add("drag-over");
+  });
+  importDropZone.addEventListener("dragleave", () => {
+    importDropZone.classList.remove("drag-over");
+  });
+  importDropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    importDropZone.classList.remove("drag-over");
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    handleImportFile(file);
+  });
+}
+
+// ---------- Recipe import (F2 U5) ----------
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
+}
+
+function setImportStatus(msg) {
+  const el = document.getElementById("import-status");
+  if (el) el.textContent = msg;
+}
+
+async function handleImportFile(file) {
+  if (!file) return;
+
+  const lowerName = (file.name || "").toLowerCase();
+  if (!(lowerName.endsWith(".html") || lowerName.endsWith(".htm"))) {
+    setImportStatus("Please choose a .html or .htm file saved from a recipe page.");
+    return;
+  }
+
+  let html;
+  try {
+    html = typeof file.text === "function" ? await file.text() : await readFileAsText(file);
+  } catch (e) {
+    setImportStatus("Could not read that file.");
+    return;
+  }
+
+  const result = parseRecipeHtml(html);
+  if (!result.ok) {
+    setImportStatus("No recipe found in that file.");
+    return;
+  }
+
+  const recipe = result.recipe;
+  openMealModal(null);
+
+  document.getElementById("meal-name").value = recipe.name || "";
+  document.getElementById("meal-category").value = "dinner";
+
+  const rowsWrap = document.getElementById("ingredient-rows");
+  rowsWrap.innerHTML = "";
+  const ingredientLines = recipe.ingredients || [];
+  if (ingredientLines.length === 0) {
+    addIngredientRow();
+  } else {
+    ingredientLines.forEach((line) => {
+      const item = ingredientLineToItem(line);
+      addIngredientRow({ name: item.name, section: item.section, quantity: item.quantity });
+    });
+  }
+
+  document.getElementById("meal-instructions").value = (recipe.instructions || []).join("\n");
+
+  pendingImportMeta = {
+    sourceUrl: recipe.sourceUrl || "",
+    yield: recipe.yield || "",
+    importedAt: new Date().toISOString(),
+  };
+
+  setImportStatus("");
 }
 
 function openMealModal(mealId) {
@@ -563,6 +693,8 @@ function openMealModal(mealId) {
   (meal.ingredients.length ? meal.ingredients : [{ name: "", section: "produce", quantity: "" }]).forEach((ing) =>
     addIngredientRow(ing)
   );
+
+  document.getElementById("meal-instructions").value = (meal.instructions || []).join("\n");
 
   document.getElementById("meal-modal-backdrop").classList.remove("hidden");
 }
@@ -618,6 +750,7 @@ document.getElementById("meal-modal-cancel").addEventListener("click", closeMeal
 function closeMealModal() {
   document.getElementById("meal-modal-backdrop").classList.add("hidden");
   editingMealId = null;
+  pendingImportMeta = null;
 }
 
 document.getElementById("meal-form").addEventListener("submit", (e) => {
@@ -640,6 +773,12 @@ document.getElementById("meal-form").addEventListener("submit", (e) => {
     if (iName) ingredients.push(ingredient);
   });
 
+  const instructionsRaw = document.getElementById("meal-instructions").value;
+  const instructions = instructionsRaw
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   if (!name) return;
 
   if (editingMealId) {
@@ -648,8 +787,19 @@ document.getElementById("meal-form").addEventListener("submit", (e) => {
     meal.category = category;
     meal.cuisine = cuisine;
     meal.ingredients = ingredients;
+    if (instructions.length > 0) {
+      meal.instructions = instructions;
+    } else {
+      delete meal.instructions;
+    }
+    // sourceUrl/yield/importedAt are left untouched on edit.
   } else {
-    mealBank.push({ id: uid(), name, category, cuisine, ingredients });
+    const newMeal = { id: uid(), name, category, cuisine, ingredients };
+    if (instructions.length > 0) newMeal.instructions = instructions;
+    if (pendingImportMeta) {
+      Object.assign(newMeal, pendingImportMeta);
+    }
+    mealBank.push(newMeal);
   }
 
   persistAll();
@@ -709,4 +859,12 @@ function renderHistoryTab(app) {
 }
 
 // ---------- Init ----------
+// Prevent a missed drag/drop of a recipe file from navigating the whole page.
+document.addEventListener("dragover", (e) => {
+  if (!e.target.closest || !e.target.closest("input, textarea")) e.preventDefault();
+});
+document.addEventListener("drop", (e) => {
+  if (!e.target.closest || !e.target.closest("input, textarea")) e.preventDefault();
+});
+
 render();
