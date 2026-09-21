@@ -1,10 +1,11 @@
-const CACHE_NAME = "grocery-planner-v1";
+const CACHE_NAME = "grocery-planner-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
   "./seed.js",
+  "./shelflife.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
