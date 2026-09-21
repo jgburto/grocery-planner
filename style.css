@@ -750,6 +750,26 @@ td > .cell-select:not(:has(option[value=""]:checked)) {
   font-size: 0.81rem;
   font-variant-numeric: tabular-nums;
 }
+.item-shelf {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  color: var(--accent-dark);
+  background: var(--accent-tint);
+  border: 1px solid rgba(74, 124, 89, 0.16);
+  border-radius: var(--radius-pill);
+  padding: 0.1rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.item-shelf.short {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-color: rgba(179, 73, 47, 0.22);
+}
+.grocery-item.checked .item-shelf { opacity: 0.7; }
 .item-sources {
   color: var(--text-muted);
   font-size: 0.72rem;
@@ -937,7 +957,7 @@ td > .cell-select:not(:has(option[value=""]:checked)) {
 
 .ingredient-row {
   display: grid;
-  grid-template-columns: 1.9fr 1.5fr 1fr auto;
+  grid-template-columns: 1.6fr 1.3fr 0.85fr 1fr auto;
   align-items: center;
   gap: var(--sp-1);
   margin-bottom: var(--sp-1);
@@ -1021,8 +1041,8 @@ main#app > div {
 }
 
 @media (max-width: 600px) {
-  /* Preserved from the original stylesheet: ingredient rows reflow to two
-     columns so name/section sit on one line and qty/remove on the next. */
+  /* Ingredient rows reflow to two columns: name/section on one line,
+     qty/shelf-life on the next, remove button on its own row. */
   .ingredient-row {
     grid-template-columns: 1fr 1fr;
     padding-bottom: var(--sp-2);

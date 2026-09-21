@@ -326,6 +326,10 @@ function generateGroceryList() {
   entries.forEach((e) => {
     if (!e.name) return;
     const key = e.section + "|" + e.name.trim().toLowerCase();
+    const shelfDaysCandidate =
+      typeof e.shelfLifeDays === "number" && Number.isFinite(e.shelfLifeDays) && e.shelfLifeDays > 0
+        ? e.shelfLifeDays
+        : null;
     if (!map.has(key)) {
       map.set(key, {
         section: e.section,
@@ -333,11 +337,13 @@ function generateGroceryList() {
         quantities: e.quantity ? [e.quantity] : [],
         sources: [e.mealName],
         checked: false,
+        shelfDaysCandidates: shelfDaysCandidate !== null ? [shelfDaysCandidate] : [],
       });
     } else {
       const item = map.get(key);
       if (e.quantity && !item.quantities.includes(e.quantity)) item.quantities.push(e.quantity);
       if (!item.sources.includes(e.mealName)) item.sources.push(e.mealName);
+      if (shelfDaysCandidate !== null) item.shelfDaysCandidates.push(shelfDaysCandidate);
     }
   });
 
@@ -351,7 +357,10 @@ function generateGroceryList() {
 
   const items = Array.from(map.values()).map((it) => {
     const key = it.section + "|" + it.name.toLowerCase();
-    return { ...it, checked: prevChecked.get(key) || false };
+    const overrideDays = it.shelfDaysCandidates.length ? Math.min(...it.shelfDaysCandidates) : undefined;
+    const shelfLife = shelfLifeFor(it.name, it.section, overrideDays);
+    const { shelfDaysCandidates, ...rest } = it;
+    return { ...rest, checked: prevChecked.get(key) || false, shelfLife };
   });
 
   items.sort((a, b) => a.name.localeCompare(b.name));
@@ -432,6 +441,15 @@ function renderListTab(app) {
         qty.className = "item-qty";
         qty.textContent = "(" + item.quantities.join(", ") + ")";
         row.appendChild(qty);
+      }
+
+      const shelfLife = item.shelfLife || null;
+      const shelfText = formatShelfLife(shelfLife);
+      if (shelfText) {
+        const shelf = document.createElement("span");
+        shelf.className = "item-shelf" + (shelfLife && shelfLife.max <= 3 ? " short" : "");
+        shelf.textContent = shelfText;
+        row.appendChild(shelf);
       }
 
       const src = document.createElement("span");
@@ -572,6 +590,14 @@ function addIngredientRow(ing) {
   qtyInput.className = "ing-qty";
   qtyInput.value = ing.quantity || "";
 
+  const shelfInput = document.createElement("input");
+  shelfInput.type = "number";
+  shelfInput.min = "1";
+  shelfInput.step = "1";
+  shelfInput.placeholder = "Good for (days)";
+  shelfInput.className = "ing-shelf";
+  shelfInput.value = typeof ing.shelfLifeDays === "number" ? ing.shelfLifeDays : "";
+
   const removeBtn = document.createElement("button");
   removeBtn.type = "button";
   removeBtn.className = "btn-icon";
@@ -581,6 +607,7 @@ function addIngredientRow(ing) {
   row.appendChild(nameInput);
   row.appendChild(sectionSelect);
   row.appendChild(qtyInput);
+  row.appendChild(shelfInput);
   row.appendChild(removeBtn);
   rowsWrap.appendChild(row);
 }
@@ -604,7 +631,13 @@ document.getElementById("meal-form").addEventListener("submit", (e) => {
     const iName = row.querySelector(".ing-name").value.trim();
     const iSection = row.querySelector(".ing-section").value;
     const iQty = row.querySelector(".ing-qty").value.trim();
-    if (iName) ingredients.push({ name: iName, section: iSection, quantity: iQty });
+    const iShelfRaw = row.querySelector(".ing-shelf").value.trim();
+    const iShelfNum = parseInt(iShelfRaw, 10);
+    const ingredient = { name: iName, section: iSection, quantity: iQty };
+    if (iShelfRaw !== "" && Number.isFinite(iShelfNum) && iShelfNum >= 1) {
+      ingredient.shelfLifeDays = iShelfNum;
+    }
+    if (iName) ingredients.push(ingredient);
   });
 
   if (!name) return;

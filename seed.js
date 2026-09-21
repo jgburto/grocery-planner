@@ -214,3 +214,5 @@ const CATEGORIES = [
   { key: "dinner", label: "Dinner" },
   { key: "snack", label: "Snacks" },
 ];
+
+if (typeof module !== "undefined") module.exports = { SEED_MEALS, SECTIONS, DAYS, CATEGORIES };
