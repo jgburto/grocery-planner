@@ -76,6 +76,7 @@ function render() {
   else if (activeTab === "bank") renderBankTab(app);
   else if (activeTab === "list") renderListTab(app);
   else if (activeTab === "history") renderHistoryTab(app);
+  else if (activeTab === "cook") renderCookTab(app);
 }
 
 // ============================================================
@@ -389,7 +390,16 @@ function renderListTab(app) {
 
   if (!groceryList || groceryList.items.length === 0) {
     wrap.innerHTML = `<div class="empty-state">No grocery list yet. Go to <strong>Weekly Menu</strong>, fill in some meals, and click "Generate grocery list from this week".</div>`;
+    const showRecipesBtnEmpty = document.createElement("button");
+    showRecipesBtnEmpty.className = "btn-secondary";
+    showRecipesBtnEmpty.id = "show-recipes-btn";
+    showRecipesBtnEmpty.textContent = "Show recipes for this week";
+    wrap.appendChild(showRecipesBtnEmpty);
     app.appendChild(wrap);
+    showRecipesBtnEmpty.addEventListener("click", () => {
+      activeTab = "cook";
+      render();
+    });
     return;
   }
 
@@ -398,6 +408,7 @@ function renderListTab(app) {
   toolbar.innerHTML = `
     <button class="btn-secondary" id="clear-checks-btn">Uncheck all</button>
     <button class="btn-secondary" id="regenerate-btn">Regenerate from current week</button>
+    <button class="btn-secondary" id="show-recipes-btn">Show recipes for this week</button>
   `;
   wrap.appendChild(toolbar);
 
@@ -475,6 +486,124 @@ function renderListTab(app) {
     render();
   });
   document.getElementById("regenerate-btn").addEventListener("click", generateGroceryList);
+  document.getElementById("show-recipes-btn").addEventListener("click", () => {
+    activeTab = "cook";
+    render();
+  });
+}
+
+// ============================================================
+// Cook this week tab
+// ============================================================
+function renderCookTab(app) {
+  const wrap = document.createElement("div");
+
+  const toolbar = document.createElement("div");
+  toolbar.className = "toolbar";
+  const backBtn = document.createElement("button");
+  backBtn.className = "btn-secondary";
+  backBtn.id = "cook-back-btn";
+  backBtn.textContent = "← Back to grocery list";
+  backBtn.addEventListener("click", () => {
+    activeTab = "list";
+    render();
+  });
+  toolbar.appendChild(backBtn);
+  wrap.appendChild(toolbar);
+
+  const heading = document.createElement("h2");
+  heading.textContent = "Cook this week" + (weekPlan.weekOf ? " · " + weekPlan.weekOf : "");
+  wrap.appendChild(heading);
+
+  const list = document.createElement("div");
+  list.id = "cook-list";
+
+  const entries = collectWeekMeals(weekPlan, mealBank);
+
+  if (entries.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Nothing planned this week yet. Fill in the Weekly Menu first.";
+    list.appendChild(empty);
+  } else {
+    entries.forEach((entry) => {
+      const article = document.createElement("article");
+      article.className = "cook-meal";
+
+      if (entry.kind === "bank") {
+        const meal = entry.meal;
+        const h3 = document.createElement("h3");
+        h3.textContent = meal.name;
+        article.appendChild(h3);
+
+        const slots = document.createElement("p");
+        slots.className = "cook-slots";
+        slots.textContent = entry.slots.join(", ");
+        article.appendChild(slots);
+
+        if (typeof meal.yield === "string" && meal.yield.trim() !== "") {
+          const yieldP = document.createElement("p");
+          yieldP.className = "cook-yield";
+          yieldP.textContent = "Yield: " + meal.yield;
+          article.appendChild(yieldP);
+        }
+
+        const ul = document.createElement("ul");
+        ul.className = "cook-ingredients";
+        (meal.ingredients || []).forEach((ing) => {
+          const li = document.createElement("li");
+          li.textContent = (ing.quantity ? ing.quantity + " " + ing.name : ing.name).trim();
+          ul.appendChild(li);
+        });
+        article.appendChild(ul);
+
+        if (Array.isArray(meal.instructions) && meal.instructions.length > 0) {
+          const ol = document.createElement("ol");
+          ol.className = "cook-steps";
+          meal.instructions.forEach((step) => {
+            const li = document.createElement("li");
+            li.textContent = step;
+            ol.appendChild(li);
+          });
+          article.appendChild(ol);
+        } else {
+          const emptyP = document.createElement("p");
+          emptyP.className = "cook-empty";
+          emptyP.textContent = "No recipe saved — edit this meal in the Meal Bank to add steps.";
+          article.appendChild(emptyP);
+        }
+
+        if (typeof meal.sourceUrl === "string" && /^https?:\/\//.test(meal.sourceUrl)) {
+          const a = document.createElement("a");
+          a.className = "cook-source";
+          a.setAttribute("target", "_blank");
+          a.setAttribute("rel", "noopener");
+          a.setAttribute("href", meal.sourceUrl);
+          a.textContent = "Source";
+          article.appendChild(a);
+        }
+      } else {
+        const h3 = document.createElement("h3");
+        h3.textContent = entry.name + " (custom)";
+        article.appendChild(h3);
+
+        const slots = document.createElement("p");
+        slots.className = "cook-slots";
+        slots.textContent = entry.slots.join(", ");
+        article.appendChild(slots);
+
+        const emptyP = document.createElement("p");
+        emptyP.className = "cook-empty";
+        emptyP.textContent = "Custom one-off meal — no recipe saved.";
+        article.appendChild(emptyP);
+      }
+
+      list.appendChild(article);
+    });
+  }
+
+  wrap.appendChild(list);
+  app.appendChild(wrap);
 }
 
 // ============================================================

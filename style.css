@@ -826,6 +826,59 @@ a.meal-source { text-decoration: none; }
 }
 
 /* ==========================================================================
+   9b. COOK THIS WEEK
+   ========================================================================== */
+.cook-meal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.cook-meal h3 {
+  font-size: 1.05rem;
+  margin: 0 0 var(--sp-1);
+}
+
+.cook-slots {
+  font-size: 0.79rem;
+  color: var(--text-muted);
+  margin: 0 0 var(--sp-2);
+}
+
+.cook-yield {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 var(--sp-2);
+}
+
+.cook-ingredients {
+  margin: 0 0 var(--sp-2);
+  padding-left: 1.25em;
+  font-size: 0.9rem;
+}
+
+.cook-steps {
+  margin: 0 0 var(--sp-2);
+  padding-left: 1.25em;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.cook-empty {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-style: italic;
+  margin: 0 0 var(--sp-2);
+}
+
+.cook-source {
+  font-size: 0.82rem;
+}
+
+/* ==========================================================================
    10. HISTORY
    ========================================================================== */
 .history-item {
@@ -1118,4 +1171,24 @@ main#app > div {
   .day-label { min-width: 88px; font-size: 0.88rem; }
   table.week-grid th:first-child { min-width: 88px; }
   .grocery-item { font-size: 0.9rem; }
+}
+
+@media print {
+  header,
+  .tabs,
+  .toolbar,
+  #import-drop-zone,
+  #import-status {
+    display: none;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .cook-meal {
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }

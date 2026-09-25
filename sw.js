@@ -1,4 +1,4 @@
-const CACHE_NAME = "grocery-planner-v3";
+const CACHE_NAME = "grocery-planner-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const APP_SHELL = [
   "./seed.js",
   "./shelflife.js",
   "./recipe-import.js",
+  "./week-utils.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
