@@ -244,6 +244,18 @@ main#app {
   margin-bottom: var(--sp-4);
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ==========================================================================
    5. BUTTONS
    ========================================================================== */
@@ -646,6 +658,39 @@ td > .cell-select:not(:has(option[value=""]:checked)) {
   font-size: 0.8rem;
 }
 
+/* Recipe import (F2 U5) */
+#import-drop-zone {
+  border: 1.5px dashed var(--sand-300);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-2);
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  background: var(--sand-50);
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+#import-drop-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+#import-status {
+  font-size: 0.79rem;
+  color: var(--text-muted);
+  min-height: 1.1em;
+  margin: 0 0 var(--sp-3);
+}
+#import-status:not(:empty) { color: var(--danger); }
+
+.meal-source {
+  font-size: 0.85rem;
+  line-height: 1;
+  text-decoration: none;
+}
+a.meal-source { text-decoration: none; }
+
 /* ==========================================================================
    9. GROCERY LIST
    ========================================================================== */
@@ -781,6 +826,59 @@ td > .cell-select:not(:has(option[value=""]:checked)) {
 }
 
 /* ==========================================================================
+   9b. COOK THIS WEEK
+   ========================================================================== */
+.cook-meal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.cook-meal h3 {
+  font-size: 1.05rem;
+  margin: 0 0 var(--sp-1);
+}
+
+.cook-slots {
+  font-size: 0.79rem;
+  color: var(--text-muted);
+  margin: 0 0 var(--sp-2);
+}
+
+.cook-yield {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 var(--sp-2);
+}
+
+.cook-ingredients {
+  margin: 0 0 var(--sp-2);
+  padding-left: 1.25em;
+  font-size: 0.9rem;
+}
+
+.cook-steps {
+  margin: 0 0 var(--sp-2);
+  padding-left: 1.25em;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.cook-empty {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-style: italic;
+  margin: 0 0 var(--sp-2);
+}
+
+.cook-source {
+  font-size: 0.82rem;
+}
+
+/* ==========================================================================
    10. HISTORY
    ========================================================================== */
 .history-item {
@@ -899,7 +997,8 @@ td > .cell-select:not(:has(option[value=""]:checked)) {
 }
 
 #meal-form input[type="text"],
-#meal-form select {
+#meal-form select,
+#meal-form textarea {
   display: block;
   width: 100%;
   padding: 0.6rem 0.7rem;
@@ -912,9 +1011,12 @@ td > .cell-select:not(:has(option[value=""]:checked)) {
   margin-top: 0.35rem;
   color: var(--text);
   background-color: var(--sand-50);
+  font-family: inherit;
+  resize: vertical;
 }
 #meal-form input[type="text"]:focus,
-#meal-form select:focus { background-color: var(--surface); }
+#meal-form select:focus,
+#meal-form textarea:focus { background-color: var(--surface); }
 
 .ingredients-editor {
   margin-top: var(--sp-4);
@@ -1038,6 +1140,7 @@ main#app > div {
   .history-item > div:last-child { width: 100%; }
   .history-item > div:last-child .btn-secondary { flex: 1; }
   .item-sources { display: none; }
+  #import-drop-zone { padding: var(--sp-2); font-size: 0.78rem; }
 }
 
 @media (max-width: 600px) {
@@ -1068,4 +1171,24 @@ main#app > div {
   .day-label { min-width: 88px; font-size: 0.88rem; }
   table.week-grid th:first-child { min-width: 88px; }
   .grocery-item { font-size: 0.9rem; }
+}
+
+@media print {
+  header,
+  .tabs,
+  .toolbar,
+  #import-drop-zone,
+  #import-status {
+    display: none;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .cook-meal {
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }

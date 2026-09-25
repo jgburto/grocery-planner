@@ -60,6 +60,9 @@
           </div>
           <div id="ingredient-rows"></div>
         </div>
+        <label>Instructions (optional, one step per line)
+          <textarea id="meal-instructions" rows="6" placeholder="One step per line"></textarea>
+        </label>
         <div class="modal-actions">
           <button type="button" id="meal-modal-cancel" class="btn-secondary">Cancel</button>
           <button type="submit" class="btn-primary">Save Meal</button>
@@ -70,6 +73,8 @@
 
   <script src="seed.js"></script>
   <script src="shelflife.js"></script>
+  <script src="recipe-import.js"></script>
+  <script src="week-utils.js"></script>
   <script src="app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
