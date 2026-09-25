@@ -172,7 +172,7 @@ Not being built now. Recorded here only because it constrains F2: if the local s
 
 ---
 
-# F2 CONTRACTS (drafted; frozen when delegated)
+# F2 CONTRACTS (U4 parser FROZEN 2026-09-20; U5 UI FROZEN 2026-09-20)
 
 ## F2 Acceptance criteria
 
@@ -181,7 +181,7 @@ Not being built now. Recorded here only because it constrains F2: if the local s
 3. `sourceUrl` comes from `<link rel="canonical">`, else JSON-LD `mainEntityOfPage`/`url`, else `<meta property="og:url">`, else `""`.
 4. Pages with no JSON-LD but with microdata (`itemtype="…/Recipe"`, `itemprop="recipeIngredient"`, `itemprop="recipeInstructions"`) still parse (`source: "microdata"`).
 5. Pages with neither return `{ ok: false, reason: "no-recipe" }`; malformed JSON-LD blocks are skipped, not fatal.
-6. `ingredientLineToItem(line)` → `{ name, quantity, section }`: `"2 cups diced onion"` → `{ name: "onion", quantity: "2 cups", section: "produce" }`. Section is guessed via `guessSection(name)` keyword table; unknown → `"pantry_grains"`. `name` uses `normalizeIngredientName` from F1 but preserves title case? **No — stores normalized lowercase, then capitalizes first letter for display consistency with seed data.**
+6. `ingredientLineToItem(line)` → `{ name, quantity, section }`. **Addendum 2026-09-20 (U5 must implement):** before normalizing, drop everything from the first comma onward (`"4 cloves garlic, minced"` → `"garlic"`) and strip trailing punctuation; test it. `"2 cups diced onion"` → `{ name: "onion", quantity: "2 cups", section: "produce" }`. Section is guessed via `guessSection(name)` keyword table; unknown → `"pantry_grains"`. `name` uses `normalizeIngredientName` from F1 but preserves title case? **No — stores normalized lowercase, then capitalizes first letter for display consistency with seed data.**
 7. Meal Bank tab has an "Import recipe (.html)" button and a drop zone; dropping or picking a `.html`/`.htm` file opens the existing meal modal pre-filled with name, category `dinner`, ingredient rows (name/section/qty pre-filled, user can edit), and a new "Instructions" textarea (one step per line). Save creates a Meal with `instructions[]`, `sourceUrl`, `yield`, `importedAt`.
 8. Non-`.html` files are rejected with an inline message; nothing else changes.
 9. Meal Bank rows for meals with `instructions.length > 0` show a 📖 marker; if `sourceUrl` is set the marker links to it (`target="_blank" rel="noopener"`).
@@ -204,6 +204,17 @@ const SECTION_KEYWORDS: Record<SectionKey, string[]>
 
 Node has no `DOMParser`; tests pass a minimal parser via `opts.DOMParser` **or** the implementation must parse JSON-LD with a regex over `<script type="application/ld+json">` blocks first (works in Node without DOM) and only use `DOMParser` for the microdata fallback when available. **Decision: regex-first for JSON-LD; microdata fallback is skipped when `DOMParser` is unavailable (test asserts `ok:false` in that case only for the microdata fixture under Node, and a browser-manual check covers it).**
 
+## F2 U5 details (frozen)
+
+- Script order in `index.html`: `seed.js` → `shelflife.js` → `recipe-import.js` → `app.js`.
+- `sw.js`: add `./recipe-import.js` to `APP_SHELL`; `CACHE_NAME = "grocery-planner-v3"`.
+- File reading: `file.text()` (fallback `FileReader.readAsText`). Accept when `file.name` ends with `.html`/`.htm` (case-insensitive) — do not rely on `file.type`.
+- Prefill: `openMealModal(null)` then set name = `recipe.name`, category `dinner`, cuisine `""`, one ingredient row per `ingredientLineToItem(line)` (name/section/quantity; shelf-life field blank), textarea = `recipe.instructions.join("\n")`. Pending import meta (`sourceUrl`, `yield`, `importedAt = new Date().toISOString()`) held in a module-level `pendingImportMeta` variable, cleared on modal close/cancel.
+- Form submit: `instructions = textarea.split("\n").map(trim).filter(Boolean)`; key omitted when empty (same rule as `shelfLifeDays`). On edit, existing `sourceUrl`/`yield`/`importedAt` are spread/kept.
+- `parseRecipeHtml` failure (`ok:false`) or wrong extension → message in a `#import-status` element (`role="status"`), auto-clears on next successful import; no modal opens.
+- Drop zone: `#import-drop-zone` inside bank toolbar area; `dragover` adds `.drag-over` class; `drop` handles `dataTransfer.files[0]`. Hidden `<input type="file" id="import-file-input" accept=".html,.htm">` triggered by `#import-recipe-btn`.
+- 📖 marker: `<a class="meal-source" href=… target="_blank" rel="noopener" title="Has instructions — open source">📖</a>` when `sourceUrl`, else `<span class="meal-source" title="Has instructions">📖</span>`. The marker is built with `createElement`/`setAttribute` (never innerHTML interpolation — `escapeHtml` does not escape `"` and is unsafe in attributes); the link form is only used when `sourceUrl` starts with `http://` or `https://`. Document-level `dragover`/`drop` `preventDefault` must not apply when the target is an `input`/`textarea`.
+
 ## F2 Module map
 
 | Unit | Owns | Depends on |
@@ -211,15 +222,57 @@ Node has no `DOMParser`; tests pass a minimal parser via `opts.DOMParser` **or**
 | U4 recipe parser | `recipe-import.js`, `tests/recipe-import.test.js`, `tests/fixtures/*.html` | U1 (shelflife.js) |
 | U5 import UI + instructions editing | `app.js` (bank tab, modal, form submit), `index.html` (textarea, drop zone, script tag), `style.css`, `sw.js` (APP_SHELL + CACHE_NAME) | U4, U2/U3 merged |
 
-# F3 CONTRACTS (drafted)
+# F3 CONTRACTS (U6 FROZEN 2026-09-20)
+
+## F3 Goal
+From the Grocery List, open a "Cook this week" view that shows, for every meal planned in the current week, the saved recipe (ingredients + numbered instructions) — read directly from `mealBank`/`weekPlan`, no AI, no network. Printable.
 
 ## F3 Acceptance criteria
-1. Grocery List tab toolbar gains "Show recipes for this week"; clicking renders a "Cook this week" view (new `activeTab === "cook"`, no new nav button required — reachable from the button; back button returns to list).
-2. View lists each day → each bank meal in grid order; for each: name, yield if set, ingredients (name + qty), numbered instructions. Meals with no instructions: single line "No recipe saved — edit this meal in the Meal Bank to add steps." Custom meals: name + "(custom)".
-3. Deduped: a meal appearing 3× in the week renders once, with a "Mon dinner, Wed lunch, …" subtitle.
-4. `@media print` styles: hide header/nav/toolbar, one meal per page-break-avoid block.
-5. Pure helper `collectWeekMeals(weekPlan, mealBank) → [{ meal, slots: string[] }]` in `app.js`… **no — put it in `week-utils.js` (new, shimmed) so it is unit-testable.**
+1. `renderListTab` toolbar (the one with `#clear-checks-btn` / `#regenerate-btn`) gains `<button class="btn-secondary" id="show-recipes-btn">Show recipes for this week</button>`. The empty-state branch of `renderListTab` (no grocery list yet) ALSO gets the same button appended after the empty-state div, so a planned week can be cooked without generating a list. Clicking sets `activeTab = "cook"` and calls `render()`. Nav tab highlighting is left untouched (Grocery List stays highlighted).
+2. `render()` routes `activeTab === "cook"` to `renderCookTab(app)`.
+3. `renderCookTab` renders, in order: a `.toolbar` with `<button class="btn-secondary" id="cook-back-btn">← Back to grocery list</button>` (click → `activeTab = "list"; render()`), an `<h2>` "Cook this week" (+ ` · ${weekPlan.weekOf}` when non-empty), then a `<div id="cook-list">` containing one `<article class="cook-meal">` per entry of `collectWeekMeals(weekPlan, mealBank)`, in that order.
+4. Each `.cook-meal` for `kind === "bank"`: `<h3>` meal name; `<p class="cook-slots">` slots joined with ", " (e.g. "Mon dinner, Wed lunch"); if `meal.yield` is a non-empty string, `<p class="cook-yield">` "Yield: …"; `<ul class="cook-ingredients">` one `<li>` per ingredient: `quantity + " " + name` trimmed (just name when quantity empty); then if `meal.instructions` is a non-empty array, `<ol class="cook-steps">` one `<li>` per step, else `<p class="cook-empty">No recipe saved — edit this meal in the Meal Bank to add steps.</p>`. If `meal.sourceUrl` starts with `http://`/`https://`, an `<a class="cook-source" target="_blank" rel="noopener">` "Source" built with `createElement`/`setAttribute` (never innerHTML).
+5. Each `.cook-meal` for `kind === "custom"`: `<h3>` name + " (custom)"; `<p class="cook-slots">`; `<p class="cook-empty">Custom one-off meal — no recipe saved.</p>`.
+6. Deleted bank meals (id not found in `mealBank`) are skipped by `collectWeekMeals`.
+7. If `collectWeekMeals` returns `[]`, `#cook-list` contains only `<div class="empty-state">Nothing planned this week yet. Fill in the Weekly Menu first.</div>`.
+8. All text goes through `textContent` (or `escapeHtml` for text nodes only); no attribute interpolation.
+9. `@media print` in `style.css`: hide `header`, `.tabs`, `.toolbar`, `#import-drop-zone`, `#import-status`; `.cook-meal { break-inside: avoid; page-break-inside: avoid; }`; body background white, no shadows.
+10. `sw.js`: add `./week-utils.js` to `APP_SHELL`; `CACHE_NAME = "grocery-planner-v4"`.
+11. `index.html`: `<script src="week-utils.js"></script>` inserted immediately before `<script src="app.js"></script>`.
+12. `npm test` passes; `tests/week-utils.test.js` covers: empty week → `[]`; single bank meal one slot; same meal in 3 slots → one entry with 3 slots in grid order; custom meal in a main slot and a custom snack; deleted id skipped; snacks ordered after the day's dinner; two different custom meals with the same name are separate entries (no dedupe of customs).
 
+## F3 Interface contracts (frozen)
+
+### `week-utils.js` (new; global script + CommonJS shim `if (typeof module !== "undefined") module.exports = { collectWeekMeals, SLOT_ORDER };`)
+```js
+const SLOT_ORDER = ["breakfast", "lunch", "dinner"]; // snacks follow dinner within a day
+
+/**
+ * @param {{ weekOf: string, days: Record<string, { breakfast, lunch, dinner, snacks: Array }> }} weekPlan
+ * @param {Array<{ id: string, name: string, ... }>} mealBank
+ * @param {Array<{ key: string, label: string }>} [days=DAYS]  // injectable for tests; defaults to global DAYS
+ * @returns {Array<{ kind: "bank", meal: object, slots: string[] } | { kind: "custom", name: string, slots: string[] }>}
+ *
+ * Iterates days in `days` order; within a day: breakfast, lunch, dinner, then each snack in array order.
+ * Slot label = `${dayLabel.slice(0,3)} ${slotName}` where slotName ∈ breakfast|lunch|dinner|snack  → "Mon dinner".
+ * Cell shape: null | { type: "bank", id } | { type: "custom", name }.
+ * bank cells: look up id in mealBank; missing → skip. Same id seen again → push slot onto the existing entry (keep first position).
+ * custom cells: always a new entry (no dedupe).
+ * Never mutates inputs. Missing `days[key]` or missing `snacks` treated as empty.
+ */
+function collectWeekMeals(weekPlan, mealBank, days) { ... }
+```
+- `days` default: `typeof DAYS !== "undefined" ? DAYS : []`. Tests must pass `days` explicitly (or `require("../seed.js").DAYS`).
+
+### `app.js` additions
+- `render()`: `else if (activeTab === "cook") renderCookTab(app);`
+- `function renderCookTab(app)` per AC3–AC7, using `collectWeekMeals(weekPlan, mealBank)` (global).
+- `#show-recipes-btn` listener in `renderListTab` (both branches).
+
+## F3 Module map
 | Unit | Owns | Depends on |
 |---|---|---|
-| U6 | `week-utils.js`, `tests/week-utils.test.js`, `app.js` (renderCookTab + toolbar button), `style.css` (print), `index.html`, `sw.js` | U5 |
+| U6 | `week-utils.js` (new), `tests/week-utils.test.js` (new), `app.js` (`renderCookTab`, `render` routing, `#show-recipes-btn`), `style.css` (`.cook-*`, `@media print`), `index.html` (script tag), `sw.js` (shell + v4) | U5 (`meal.instructions`, `meal.yield`, `meal.sourceUrl`) |
+
+## F3 Non-goals
+- No AI summarisation / rewriting of instructions. No scaling of quantities by servings. No per-day filtering UI. No new nav tab. No changes to `groceryList` shape.
