@@ -704,8 +704,16 @@ function ingredientLineToItem(line) {
   var raw = typeof line === "string" ? line : "";
   var quantity = extractQuantity(raw);
 
-  var normalized = normalizeIngredientName(raw);
-  if (!normalized) normalized = raw.trim().toLowerCase();
+  // Addendum 2026-09-20: before normalizing, drop everything from the first
+  // comma onward ("4 cloves garlic, minced" -> "4 cloves garlic") and strip
+  // trailing punctuation ("1 cup rice." -> "1 cup rice").
+  var forName = raw;
+  var commaIdx = forName.indexOf(",");
+  if (commaIdx !== -1) forName = forName.slice(0, commaIdx);
+  forName = forName.replace(/[.!?;:]+\s*$/, "").trim();
+
+  var normalized = normalizeIngredientName(forName);
+  if (!normalized) normalized = forName.trim().toLowerCase();
 
   var name = normalized.charAt(0).toUpperCase() + normalized.slice(1);
   var section = guessSection(normalized);
