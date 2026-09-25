@@ -67,3 +67,30 @@ Q1–Q3 answered (static / range / list badge + editor override). `normalizeIngr
 
 ## 2026-09-20 — F1 accepted after review fixes
 23/23 tests; review findings 1–3 resolved (lookup reorder, section gate, order-pinning tests with a passing mutation check). DOM seam check re-run green. Awaiting user approval to commit on `feat/shelf-life`.
+
+## 2026-09-20 — U4 recipe parser accepted
+42/42 tests. Ratified: quantity for "1 (15 oz) can black beans" is the full `"1 (15 oz) can"` (more useful on a list than "1"). Ratified: microdata path tested via a hand-rolled DOMParser shim in the test file. Gap found in my own spot-check: trailing ", minced"-style notes leak into names → spec addendum on AC6, assigned to U5. Committed on `feat/recipe-parser` stacked on `feat/shelf-life`; PR targets `feat/shelf-life` so GitHub retargets to `main` once #2 merges.
+
+## 2026-09-20 — U5 import UI contract frozen
+- **Decision:** Import reuses the existing meal modal (prefill) rather than a dedicated import screen; import metadata is held in a module-level `pendingImportMeta` until save. Instructions are edited as a plain textarea, one step per line.
+- **Alternatives:** separate "Imported recipe" preview modal; storing instructions as a single string.
+- **Reason:** one editing path means AC10 (edit instructions on any meal) falls out for free; `string[]` matches the parser output and is what F3's cook view renders per-step.
+- **Also:** `sourceUrl` only rendered as a link when it is `http(s)://` — prevents `javascript:` from an untrusted file landing in an `href`.
+
+## 2026-09-20 — U5 accepted (after one review fix)
+- Review found an attribute-injection XSS: `escapeHtml` (textContent→innerHTML) does not escape `"`, and a saved page's canonical URL can carry one. Fixed by building the 📖 marker with `createElement`/`setAttribute`; SPEC corrected (it had wrongly prescribed `escapeHtml` in an `href`). Rule going forward: **`escapeHtml` is for text nodes only; never for attributes.**
+- Also fixed: document-level drop `preventDefault` skipped for `input`/`textarea` targets (was blocking text drag into fields); import status re-queried after `await` (tab switch mid-read left a detached node).
+- Ratified assumptions: import controls rendered by `renderBankTab` (not static HTML); `.visually-hidden` utility for the file input; status text styled as error since both messages are rejections.
+- Deferred (out-of-scope observations): `guessSection` mis-sections "chicken broth" → meat_seafood and "salt and pepper" → produce (keyword table needs pantry entries for broth/stock/salt/black pepper); decimal-comma quantities ("1,5 kg") lose the name under the first-comma rule; imported meals store `sourceUrl:""`/`yield:""` rather than omitting; iPhone Safari has no native "save as .html" (iPad/desktop is the realistic path).
+
+## 2026-09-20 — U6 cook-this-week contract frozen
+- **Decision:** Cook view is derived live from `weekPlan` + `mealBank`, not from the `groceryList` snapshot. Alternatives: store recipes into `groceryList` at generation time (rejected: duplicates data, goes stale when a meal is edited). Consequence: button is also offered in the empty-list state.
+- **Decision:** `activeTab = "cook"` is a sub-view of Grocery List (no nav button, nav highlight untouched, explicit back button). Alternative: a fifth nav tab (rejected: user framed it as "an option on the grocery list").
+- **Decision:** `collectWeekMeals` lives in `week-utils.js` with an injectable `days` param so it is unit-testable under `node --test` without the DOM or global `DAYS`. Bank meals dedupe by id; custom meals never dedupe (two "leftovers" entries are legitimately separate).
+- **Decision:** Slot labels use `label.slice(0,3)` ("Mon dinner") rather than the key, to be readable if DAYS labels change.
+
+## 2026-09-20 — U6 accepted (PR #6)
+- Verified: 55/55 tests; headless-Chrome seam harness through the real UI (both button branches, ordering/dedupe, hostile sourceUrl inert, back button, empty week). code-critic: no blockers; its two test gaps (keep-first-position with intervening entry; snacks stay inside their day) closed with one added test.
+- Ratified assumption: `meal.yield` shown only when `trim() !== ""`.
+- Deferred observation: `@media print` removes shadows only from `.cook-meal`; other tabs still print with card shadows. style.css section TOC comment now has an unnumbered "9b" section.
+- Not exercised: real print preview and iOS PWA — needs a manual pass.
