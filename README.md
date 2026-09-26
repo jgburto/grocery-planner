@@ -4,57 +4,35 @@ A web app to automate grocery shopping by planning weekly meals from a saved "me
 
 ## Quick Start
 
-### Option 1: Run with Python's built-in server (recommended)
+The app is published over HTTPS with GitHub Pages:
 
-```bash
-cd grocery-planner
-python3 -m http.server 8791
-```
+**https://jgburto.github.io/grocery-planner/**
 
-Then open **[http://localhost:8791](http://localhost:8791)** in your browser.
-
-### Option 2: Open directly
-
-Just double-click `index.html` to open it in your browser. (Works, but server mode is more reliable for forms and storage.)
+Every merge to `main` redeploys it within a minute or two. Nothing needs to run on your Mac.
 
 ## 📱 Using it on your iPhone
 
-The app installs like a real app on your Home Screen — full-screen, its own icon, no browser address bar. Here's how to set it up:
+1. Open **Safari** (must be Safari, not Chrome) and go to **https://jgburto.github.io/grocery-planner/**
+2. Tap the **Share** button (square with an arrow)
+3. Tap **Add to Home Screen**, then **Add**
 
-### Step 1: Start the server on your Mac, reachable on your home Wi-Fi
+You'll get a "Grocery" icon that opens full-screen like a native app. Because the site is served over HTTPS, the service worker installs, and the app keeps working offline, e.g. at the store with no signal, even after you close and reopen it.
 
-Instead of `localhost`, bind the server so your iPhone can reach it over Wi-Fi:
+### Why HTTPS instead of serving from the Mac
+
+Older versions of these instructions served the app from your Mac over plain `http://` on home Wi-Fi. Anyone else on that network could tamper with the files in transit. That matters once the app holds secrets, such as the Agent Chef API key. Plain HTTP also blocks offline mode on iPhone. Use the HTTPS URL above on every device.
+
+**Moving from the old address:** your data lives in the browser, per site address. Opening the HTTPS URL starts with the default meal bank; anything you saved at `http://<mac-ip>:8791` stays there and does not carry over.
+
+## Local development
+
+For working on the code, serve it from the project folder:
 
 ```bash
-cd grocery-planner
 python3 -m http.server 8791
 ```
 
-By default this listens on all network interfaces, so it's already reachable from other devices on the same Wi-Fi network.
-
-### Step 2: Find your Mac's local IP address
-
-```bash
-ipconfig getifaddr en0
-```
-
-This prints something like `192.168.0.230`. (If that returns nothing, try `ipconfig getifaddr en1`.)
-
-### Step 3: Open it on your iPhone
-
-1. Make sure your iPhone is on the **same Wi-Fi network** as your Mac
-2. Open **Safari** (must be Safari, not Chrome) and go to `http://<your-mac-ip>:8791` — e.g. `http://192.168.0.230:8791`
-3. Tap the **Share** button (square with an arrow) at the bottom of the screen
-4. Tap **Add to Home Screen**
-5. Tap **Add**
-
-You'll now have a "Grocery" icon on your Home Screen that opens full-screen, just like a native app.
-
-### Notes on this setup
-
-- Your Mac needs to be **awake and running the server** whenever you want to open the app — it's serving the app directly from your machine on your local network.
-- This works great for planning at home. If you want the list available anywhere (e.g. cell data at the store with no Wi-Fi), open the app once while on Wi-Fi before you leave — the page keeps working without a network connection as long as you don't force-quit or reload it, since everything runs locally in the browser tab and your data is saved in the phone's local storage.
-- For "install once, always works anywhere, even after restarting the app" — the kind of experience you get from an App Store app — you'd want to host this on a real internet server with HTTPS (e.g. Netlify, Vercel, GitHub Pages). That's a bigger step involving deployment and possibly a paid/free hosting account; let me know if you want help setting that up later.
+Then open **[http://localhost:8791](http://localhost:8791)**. `localhost` counts as a secure context, so the service worker works here too. Don't point other devices at your Mac's IP over plain HTTP; use the published HTTPS URL instead.
 
 ## Features
 
@@ -110,7 +88,8 @@ You'll now have a "Grocery" icon on your Home Screen that opens full-screen, jus
 
 ## Data Storage
 
-- Everything is stored in your browser's **localStorage** (no server, no login, no cloud sync)
+- Everything is stored in your browser's **localStorage** (no login, no cloud sync). GitHub Pages only serves the app files; your data never leaves the device
+- Storage is per device *and* per site address: the HTTPS site, `localhost`, and any old `http://<mac-ip>` address each have their own separate data
 - Data persists across browser sessions until you clear your browser cache
 - Clearing browser data **will** delete your meal bank and past weeks, so back them up if you need them
 
