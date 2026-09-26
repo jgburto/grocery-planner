@@ -3,7 +3,7 @@ cd "$(dirname "$0")"
 PORT=8420
 
 if ! lsof -i :$PORT -sTCP:LISTEN >/dev/null 2>&1; then
-  nohup python3 -m http.server $PORT > /tmp/grocery-planner-server.log 2>&1 &
+  nohup python3 -m http.server $PORT --bind 127.0.0.1 > /tmp/grocery-planner-server.log 2>&1 &
   disown
   sleep 1
 fi

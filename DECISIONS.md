@@ -94,3 +94,10 @@ Q1–Q3 answered (static / range / list badge + editor override). `normalizeIngr
 - Ratified assumption: `meal.yield` shown only when `trim() !== ""`.
 - Deferred observation: `@media print` removes shadows only from `.cook-meal`; other tabs still print with card shadows. style.css section TOC comment now has an unnumbered "9b" section.
 - Not exercised: real print preview and iOS PWA — needs a manual pass.
+
+## 2026-09-25 — HTTPS via GitHub Pages (user chose option A)
+**Decision:** The app's supported address is https://jgburto.github.io/grocery-planner/ (Pages, source `main` /, HTTPS enforced). Add `.nojekyll`. The local launcher now binds `127.0.0.1` only; the README drops the "serve from Mac over LAN HTTP" iPhone instructions.
+**Why:** Removes the on-path injection vector behind the F5 security MAJOR, and puts the iPhone in a secure context, so the service worker (offline) finally works there.
+**Root cause of failing Pages builds:** Jekyll (legacy build) parses `{{ … }}` in SPEC.md as Liquid. `.nojekyll` serves files verbatim.
+**User choices:** no data export/import for now (users start fresh at the new origin; documented in README). Shipped as its own `chore/https-pages` PR, separate from F5.
+**Residual:** `jgburto.github.io` is one origin shared by every Pages project on the account, so a future Pages site there could read `gp_chefApiKey`. Mitigation if that ever happens: a custom domain for this app.
