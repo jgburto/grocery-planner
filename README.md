@@ -41,6 +41,13 @@ Then open **[http://localhost:8791](http://localhost:8791)**. `localhost` counts
 - **Dropdown per cell** — pick from 60+ pre-seeded meals or add a custom one-off meal
 - **Multi-select snacks** — add multiple snacks per day
 - **Auto-saved** — your grid persists in the browser
+- **✨ Auto-fill week** — one tap fills the empty cells for you
+  - Only **empty** cells are filled; meals you already picked (including custom ones) are kept
+  - Breakfast, lunch, and dinner each get a meal from the matching category in your Meal Bank
+  - **No repeats** within a meal type until your Meal Bank has run out of meals to use
+  - Every day with no snack gets **1 snack** (days that already have one are left alone)
+  - **Undo auto-fill** puts the week back exactly as it was. To get a different set of meals, tap **Undo auto-fill**, then **✨ Auto-fill week** again
+  - A short message tells you how many cells were filled (or that the week is already full)
 
 ### 🥣 Meal Bank
 - **60+ meals** seeded from your template (breakfast, lunch, dinner, snacks)
@@ -68,11 +75,14 @@ Then open **[http://localhost:8791](http://localhost:8791)**. `localhost` counts
    - For snacks, click **"+ add snack..."** to add multiples per day
 
 2. **Fill out your full week**
-   - Repeat for all days and meal types
+   - Tap **"✨ Auto-fill week"** to fill every empty cell at once. Anything you picked yourself stays put
+   - Don't like the result? Tap **"Undo auto-fill"**, then **"✨ Auto-fill week"** again for a new set
+   - Or fill cells by hand: repeat for all days and meal types
    - You can leave cells empty if you want
+   - Undo disappears as soon as you change anything else in the grid, switch tabs, or clear the week
 
 3. **Generate your grocery list**
-   - Click **"Generate grocery list from this week"**
+   - Auto-fill doesn't build the list for you. Click **"Generate grocery list from this week"**
    - Review the organized list, check off items as you shop
    - Save the tab or take a screenshot to use while at the store
 

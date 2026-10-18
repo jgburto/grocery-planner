@@ -101,3 +101,20 @@ Q1–Q3 answered (static / range / list badge + editor override). `normalizeIngr
 **Root cause of failing Pages builds:** Jekyll (legacy build) parses `{{ … }}` in SPEC.md as Liquid. `.nojekyll` serves files verbatim.
 **User choices:** no data export/import for now (users start fresh at the new origin; documented in README). Shipped as its own `chore/https-pages` PR, separate from F5.
 **Residual:** `jgburto.github.io` is one origin shared by every Pages project on the account, so a future Pages site there could read `gp_chefApiKey`. Mitigation if that ever happens: a custom domain for this app.
+
+## 2026-10-17 — F6 auto-fill week: contract frozen
+- **Decision:** Auto-fill fills **empty slots only** by default. Alternative: replace the whole week on each click (rejected: destroys hand-picked meals).
+- **Decision:** A breakfast/lunch/dinner cell pointing at a deleted bank meal renders blank today, so it counts as **empty** and is refilled. A snack pointing at a deleted meal visibly shows "(deleted meal)", so it is **left alone and counted** toward the per-day snack total.
+- **Decision:** Variety is a per-category **shuffle-bag**: no repeats until every meal in the category has been used (meals already in the grid count as used), then the bag refills. Alternatives: independent random picks (repeats likely), avoiding last week's History (see Q3 below).
+- **Decision:** Undo is **in memory only** and snapshots `weekPlan.days` only (never `weekOf`). One level; any other grid change, tab switch, Clear week, or Load from History clears it. Reload also clears it. Alternative: persist undo in localStorage (rejected: stale snapshots surviving across sessions).
+- **Decision:** `autofillWeek` is a pure function in `week-utils.js` with injectable `days` and `rng`, testable under `node --test`.
+
+## 2026-10-17 — F6 user ratified Q1-Q4 defaults
+- Q1 fill empty slots only; Q2 one snack per day; Q3 no History avoidance; Q4 the `FEATURES.autofill` flag is **live in the same PR**.
+- **Q4 knowingly overrides BRANCHING.md**, which flips flags in a separate tiny PR.
+- **Merge-seam rule vs unmerged `feat/agent-chef-on`:** whichever PR merges second merges the `FEATURES` keys (`{ agentChef, autofill }`), never replaces them, and bumps `CACHE_NAME` past whatever `main` has at merge time (this branch ships v5).
+
+## 2026-10-17 — U9/U10 accepted
+- Verified: 71/71 tests (16 new). Headless-Chrome check through the real UI: fill; keeps a custom pick; no dinner repeats; undo restores exactly; full-week message; undo cleared by select change, snack add, snack remove, Clear week, and tab switch; undo leaves `weekOf` alone; deleted-meal cell refilled; no JS exceptions.
+- The orchestrator caught and fixed a defect the unit tests could not: the toolbar was no longer appended, so the Menu tab would have thrown.
+- **Not exercised in a browser:** Load-from-History clearing the undo, verified by code inspection only.

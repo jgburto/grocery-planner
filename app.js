@@ -6,6 +6,9 @@ const STORAGE_KEYS = {
   history: "gp_history",
 };
 
+// Feature flags. Merge keys when combining with other branches; never replace.
+const FEATURES = { autofill: true };
+
 function load(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
@@ -45,6 +48,16 @@ let history = load(STORAGE_KEYS.history, []);
 
 let activeTab = "menu";
 
+// Auto-fill week: in-memory only. autofillUndo is a deep copy of weekPlan.days from
+// before the last fill (or null); autofillStatus is the message shown beside the buttons.
+let autofillUndo = null;
+let autofillStatus = "";
+
+function clearAutofillUndo() {
+  autofillUndo = null;
+  autofillStatus = "";
+}
+
 // Holds sourceUrl/yield/importedAt for a recipe import in progress, until the
 // meal modal is saved (new meal) or closed/cancelled (cleared either way).
 let pendingImportMeta = null;
@@ -64,6 +77,7 @@ function mealById(id) {
 document.getElementById("tabs").addEventListener("click", (e) => {
   const btn = e.target.closest(".tab-btn");
   if (!btn) return;
+  clearAutofillUndo();
   activeTab = btn.dataset.tab;
   document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
   render();
@@ -92,6 +106,31 @@ function renderMenuTab(app) {
     <button class="btn-secondary" id="save-week-btn">Save as past week</button>
     <button class="btn-secondary" id="clear-week-btn">Clear week</button>
   `;
+  if (FEATURES.autofill) {
+    const autofillBtn = document.createElement("button");
+    autofillBtn.className = "btn-secondary";
+    autofillBtn.id = "autofill-week-btn";
+    autofillBtn.textContent = "✨ Auto-fill week";
+    autofillBtn.addEventListener("click", autofillCurrentWeek);
+    toolbar.insertBefore(autofillBtn, toolbar.children[1]);
+
+    if (autofillUndo) {
+      const undoBtn = document.createElement("button");
+      undoBtn.className = "btn-secondary";
+      undoBtn.id = "autofill-undo-btn";
+      undoBtn.textContent = "Undo auto-fill";
+      undoBtn.addEventListener("click", undoAutofill);
+      toolbar.appendChild(undoBtn);
+    }
+    if (autofillStatus) {
+      const status = document.createElement("span");
+      status.className = "autofill-status";
+      status.id = "autofill-status";
+      status.setAttribute("role", "status");
+      status.textContent = autofillStatus;
+      toolbar.appendChild(status);
+    }
+  }
   wrap.appendChild(toolbar);
 
   const gridWrap = document.createElement("div");
@@ -132,12 +171,45 @@ function renderMenuTab(app) {
   document.getElementById("generate-list-btn").addEventListener("click", generateGroceryList);
   document.getElementById("clear-week-btn").addEventListener("click", () => {
     if (confirm("Clear the entire weekly grid?")) {
+      clearAutofillUndo();
       weekPlan = emptyWeek();
       persistAll();
       render();
     }
   });
   document.getElementById("save-week-btn").addEventListener("click", saveAsPastWeek);
+}
+
+function autofillCurrentWeek() {
+  const r = autofillWeek(weekPlan, mealBank);
+  // "breakfast" / "breakfast or snack" / "breakfast, lunch or snack"
+  const skipped = r.skippedCategories;
+  const skippedList = skipped.length > 1
+    ? `${skipped.slice(0, -1).join(", ")} or ${skipped[skipped.length - 1]}`
+    : skipped.join("");
+  const skippedNote = skipped.length
+    ? ` No ${skippedList} meals in your Meal Bank, so those slots were left empty.`
+    : "";
+  if (r.filled > 0) {
+    autofillUndo = JSON.parse(JSON.stringify(weekPlan.days));
+    weekPlan.days = r.plan.days;
+    autofillStatus = `Filled ${r.filled} ${r.filled === 1 ? "slot" : "slots"}.${skippedNote}`;
+    persistAll();
+  } else {
+    // Grid unchanged: keep any pending undo so Undo → Auto-fill again still re-rolls.
+    autofillStatus = skippedNote
+      ? `Nothing to fill.${skippedNote}`
+      : "Week is already full — nothing to fill.";
+  }
+  render();
+}
+
+function undoAutofill() {
+  if (!autofillUndo) return;
+  weekPlan.days = autofillUndo;
+  clearAutofillUndo();
+  persistAll();
+  render();
 }
 
 function buildSingleMealSelect(dayKey, category) {
@@ -179,18 +251,22 @@ function buildSingleMealSelect(dayKey, category) {
   select.addEventListener("change", () => {
     const val = select.value;
     if (val === "") {
+      clearAutofillUndo();
       weekPlan.days[dayKey][category] = null;
     } else if (val === "__custom__") {
       const name = prompt("Name of the custom meal:");
       if (name && name.trim()) {
+        clearAutofillUndo();
         weekPlan.days[dayKey][category] = { type: "custom", name: name.trim() };
       } else {
         select.value = "";
         return;
       }
     } else if (val.startsWith("bank:")) {
+      clearAutofillUndo();
       weekPlan.days[dayKey][category] = { type: "bank", id: val.slice(5) };
     } else if (val.startsWith("custom:")) {
+      clearAutofillUndo();
       weekPlan.days[dayKey][category] = { type: "custom", name: val.slice(7) };
     }
     persistAll();
@@ -214,6 +290,7 @@ function buildSnackCell(dayKey) {
     removeBtn.className = "btn-icon";
     removeBtn.textContent = "✕";
     removeBtn.addEventListener("click", () => {
+      clearAutofillUndo();
       weekPlan.days[dayKey].snacks.splice(idx, 1);
       persistAll();
       render();
@@ -248,9 +325,11 @@ function buildSnackCell(dayKey) {
     if (val === "__custom__") {
       const name = prompt("Name of the custom snack:");
       if (name && name.trim()) {
+        clearAutofillUndo();
         weekPlan.days[dayKey].snacks.push({ type: "custom", name: name.trim() });
       }
     } else if (val.startsWith("bank:")) {
+      clearAutofillUndo();
       weekPlan.days[dayKey].snacks.push({ type: "bank", id: val.slice(5) });
     }
     if (val !== "") {
@@ -961,6 +1040,7 @@ function renderHistoryTab(app) {
     loadBtn.textContent = "Load into this week";
     loadBtn.addEventListener("click", () => {
       if (confirm("Replace the current weekly grid with this saved week?")) {
+        clearAutofillUndo();
         weekPlan = { weekOf: h.weekOf, days: JSON.parse(JSON.stringify(h.days)) };
         persistAll();
         activeTab = "menu";

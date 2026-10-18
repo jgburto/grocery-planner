@@ -276,3 +276,58 @@ function collectWeekMeals(weekPlan, mealBank, days) { ... }
 
 ## F3 Non-goals
 - No AI summarisation / rewriting of instructions. No scaling of quantities by servings. No per-day filtering UI. No new nav tab. No changes to `groceryList` shape.
+
+# F6 CONTRACTS (U9/U10, FROZEN 2026-10-17)
+
+## F6 Goal
+One button on the Weekly Menu tab fills the week's grid from the Meal Bank, category-appropriate (breakfast slot from breakfast meals, etc.), with in-category variety. Pure local; no AI, no network.
+
+## F6 Acceptance criteria
+1. Toolbar gains `<button class="btn-secondary" id="autofill-week-btn">✨ Auto-fill week</button>`, inserted directly after "Generate grocery list", only when `FEATURES.autofill` is true (it is `true` on merge).
+2. Fills empty slots only; existing picks (bank or custom) are untouched. A full week yields `filled: 0` and the message "Week is already full — nothing to fill."
+3. Fills breakfast, lunch, dinner for every day in `DAYS`, and tops snacks up to 1 per day.
+4. Variety: within a category no meal repeats until every meal of that category has been used (meals already in the grid count as used); then the bag refills.
+5. After a fill (`filled > 0`), `#autofill-undo-btn` ("Undo auto-fill") restores the grid exactly; `weekOf` is never touched. Auto-fill then Undo then Auto-fill again re-rolls.
+6. Undo and the status line are cleared by every other grid change or context change (list below).
+7. `weekPlan` shape unchanged (cells are ordinary `{ type: "bank", id }`); no migration. The grocery list is not regenerated.
+8. `npm test` passes (71 tests, 16 of them new in `tests/week-utils.test.js`).
+
+## F6 Interface contracts (frozen)
+
+### `week-utils.js`
+Export shim becomes `module.exports = { collectWeekMeals, autofillWeek, SLOT_ORDER }`.
+```js
+/**
+ * @param {{ weekOf: string, days: object }} weekPlan   // not mutated
+ * @param {Array<{ id: string, category: string }>} mealBank
+ * @param {{ days?: Array<{key,label}>, rng?: () => number, snacksPerDay?: number }} [opts]
+ *        // days defaults to global DAYS (or [] if undefined); rng defaults to Math.random; snacksPerDay defaults to 1
+ * @returns {{ plan: object, filled: number, skippedCategories: string[] }}
+ */
+function autofillWeek(weekPlan, mealBank, opts)
+```
+- **"Empty" B/L/D slot:** `null`/missing, or `{ type: "bank" }` whose `id` is not in `mealBank` (renders blank today). Custom cells are never empty.
+- **Snacks:** topped up to `snacksPerDay`; every existing snack entry, including deleted-meal and custom ones, counts toward the total and is left alone. A day with 0 snacks gets `snacksPerDay`; a day with >= that gets none.
+- **`plan`:** deep copy of `weekPlan`; every day in `opts.days` present with all four keys (missing/`null` day objects and missing `snacks` treated as empty). Added cells are `{ type: "bank", id }`.
+- **`filled`:** number of cells added.
+- **`skippedCategories`:** categories that had at least one empty slot but no bank meals, in order `"breakfast"`, `"lunch"`, `"dinner"`, `"snack"`. Those slots stay empty.
+- **Variety:** per category, a shuffled bag of pool meals not already placed in the grid; when the bag runs out it is refilled with the whole pool. Deterministic under an injected `rng`.
+
+### `app.js`
+- `const FEATURES = { autofill: true }` (top of file; when merging with other branches, merge keys, never replace).
+- Module state, in memory only (reload clears it): `autofillUndo` (deep copy of `weekPlan.days` from before the fill, or `null`) and `autofillStatus` (string). `renderMenuTab` reads both, so they survive the `render()` the fill triggers.
+- `autofillCurrentWeek()`: calls `autofillWeek(weekPlan, mealBank)`. If `filled > 0`: saves the snapshot, sets `weekPlan.days = plan.days`, status `Filled N slot(s).`, `persistAll()`. Otherwise the grid is unchanged: any pending undo is **kept** and only the status is set: "Week is already full — nothing to fill." (or `Nothing to fill.` when the cause is empty categories). Skipped categories append ` No <list> meals in your Meal Bank, so those slots were left empty.` Then `render()`.
+- `undoAutofill()`: `weekPlan.days = autofillUndo`, clears state, `persistAll()`, `render()`. Touches `days` only, never `weekOf`.
+- `clearAutofillUndo()` (clears both variables) is called from: B/L/D select change (when a value is applied: clear, bank pick, or custom pick; a cancelled custom-name prompt does not clear), snack add (only when a snack is actually added; a cancelled custom-snack prompt does not clear), snack remove, Clear week (after confirm), the tab-switch click handler, and Load into this week from History (after confirm). A no-op auto-fill click does **not** clear it.
+- `style.css`: `.autofill-status`. `sw.js`: `CACHE_NAME = "grocery-planner-v5"`.
+
+## F6 Module map
+| Unit | Owns | Depends on |
+|---|---|---|
+| U9 core | `week-utils.js` (`autofillWeek`), `tests/week-utils.test.js` | U6 (`week-utils.js`) |
+| U10 UI | `app.js` (`FEATURES`, auto-fill handlers, toolbar), `style.css`, `sw.js` (v5) | U9 |
+
+Verification: `npm test`.
+
+## F6 Non-goals
+No AI picking, no nutrition/budget/cuisine balancing, no per-slot locking, no avoiding recently saved History weeks, no grocery-list auto-regeneration.
