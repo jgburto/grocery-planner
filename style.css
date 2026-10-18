@@ -244,6 +244,11 @@ main#app {
   margin-bottom: var(--sp-4);
 }
 
+.autofill-status {
+  font-size: 0.79rem;
+  color: var(--text-muted);
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
